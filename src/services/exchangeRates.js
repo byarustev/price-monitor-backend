@@ -4,6 +4,7 @@ const API_KEY = process.env.EXCHANGE_RATE_API_KEY;
 const BASE_URL = process.env.BASE_URL;
 
 async function fetchExchangeRates(base = 'EUR') {
+    return generateMockRates();
     try {
         const response = await axios.get(`${BASE_URL}/latest`, {
             params: {
