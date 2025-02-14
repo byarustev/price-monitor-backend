@@ -17,12 +17,32 @@ npm install
 ```
 
 2. Create a `.env` file with the following variables:
-```
+```env
+# Your API key from exchangeratesapi.io
 EXCHANGE_RATE_API_KEY=your_api_key_here
+
+# Server port for WebSocket and HTTP connections
 PORT=3000
+
+# How often to check for rate updates (in milliseconds)
 UPDATE_INTERVAL=60000
+
+# Minimum rate change to trigger an event (0.001 = 0.1%)
 RATE_CHANGE_THRESHOLD=0.001
+
+# API base URL
+BASE_URL=http://api.exchangeratesapi.io/v1
 ```
+
+### Environment Variables Explained
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| EXCHANGE_RATE_API_KEY | Your API key from exchangeratesapi.io | - | Yes |
+| PORT | Server port number | 3000 | No |
+| UPDATE_INTERVAL | Time between rate checks (ms) | 60000 | No |
+| RATE_CHANGE_THRESHOLD | Minimum change to trigger event | 0.001 | No |
+| BASE_URL | Exchange rates API base URL | http://api.exchangeratesapi.io/v1 | No |
 
 - Get your API key from [exchangeratesapi.io](https://exchangeratesapi.io/)
 - `UPDATE_INTERVAL` is in milliseconds (default: 60000 = 1 minute)
