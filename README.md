@@ -8,8 +8,45 @@ A Node.js service that monitors currency exchange rates and broadcasts changes t
 - Detects rate changes above a configurable threshold
 - Broadcasts rate changes to connected clients via WebSocket
 - Configurable update interval
+- Docker support for easy deployment
 
-## Setup
+## Running with Docker
+
+### Quick Start
+
+1. Build the Docker image:
+```bash
+docker build -t currency-monitor .
+```
+
+2. Run the container:
+```bash
+docker run -p 3000:3000 --env-file .env currency-monitor
+```
+
+### Using Docker Compose
+
+Create a `docker-compose.yml` file:
+```yaml
+version: '3.8'
+services:
+  currency-monitor:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+    restart: unless-stopped
+```
+
+Then run:
+```bash
+docker-compose up -d
+```
+
+## Manual Setup
 
 1. Install dependencies:
 ```bash
