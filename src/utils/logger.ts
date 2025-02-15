@@ -1,8 +1,18 @@
 import winston from 'winston';
-import { Papertrail } from 'winston-papertrail';
+import * as Transport from 'winston-transport';
 
 const { createLogger, format, transports } = winston;
 const { combine, timestamp, printf, colorize } = format;
+
+interface PapertrailTransport extends Transport {
+    new(options: {
+        host: string;
+        port: number;
+        hostname: string;
+        level: string;
+        handleExceptions: boolean;
+    }): Transport;
+}
 
 // Custom format for logs
 const logFormat = printf(({ level, message, timestamp, ...metadata }) => {
@@ -13,49 +23,42 @@ const logFormat = printf(({ level, message, timestamp, ...metadata }) => {
     return msg;
 });
 
-// Create Papertrail transport if credentials are provided
-const getPapertrailTransport = (): Papertrail | null => {
-    if (process.env.PAPERTRAIL_HOST && process.env.PAPERTRAIL_PORT) {
-        return new Papertrail({
-            host: process.env.PAPERTRAIL_HOST,
-            port: parseInt(process.env.PAPERTRAIL_PORT),
-            hostname: process.env.PAPERTRAIL_HOSTNAME || 'currency-monitor',
-            program: process.env.NODE_ENV || 'development',
-            format: format.simple()
-        });
-    }
-    return null;
-};
-
-// Configure transports
-const configureTransports = (): winston.transport[] => {
-    const transportsList: winston.transport[] = [
-        new transports.Console({
-            level: process.env.LOG_LEVEL || 'info',
-            format: combine(
-                colorize({ all: true }),
-                timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-                logFormat
-            )
-        })
-    ];
-
-    const papertrailTransport = getPapertrailTransport();
-    if (papertrailTransport) {
-        transportsList.push(papertrailTransport as unknown as winston.transport);
-    }
-
-    return transportsList;
-};
-
+// Create the logger
 const logger = createLogger({
-    level: process.env.LOG_LEVEL || 'info',
     format: combine(
-        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        timestamp(),
+        colorize(),
         logFormat
     ),
-    transports: configureTransports(),
-    exitOnError: false
+    transports: [
+        new transports.Console({
+            level: process.env.LOG_LEVEL || 'info'
+        })
+    ]
 });
+
+// Add Papertrail transport if configured
+if (process.env.PAPERTRAIL_HOST && process.env.PAPERTRAIL_PORT) {
+    const Papertrail = require('winston-papertrail').Papertrail as PapertrailTransport;
+
+    logger.add(new Papertrail({
+        host: process.env.PAPERTRAIL_HOST,
+        port: parseInt(process.env.PAPERTRAIL_PORT, 10),
+        hostname: process.env.PAPERTRAIL_HOSTNAME || 'currency-monitor-backend',
+        level: process.env.LOG_LEVEL || 'info',
+        handleExceptions: true
+    }));
+}
+
+// Handle uncaught exceptions
+logger.exceptions.handle(
+    new transports.Console({
+        format: combine(
+            timestamp(),
+            colorize(),
+            logFormat
+        )
+    })
+);
 
 export default logger; 

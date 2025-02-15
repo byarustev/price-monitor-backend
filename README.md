@@ -20,6 +20,10 @@ This application follows a Service-Oriented Architecture (SOA) with the followin
 └────────┬────────┘
          │
 ┌────────┴────────┐
+│     Auth        │ ← Client Authentication
+└────────┬────────┘
+         │
+┌────────┴────────┐
 │ Service Layer   │
 ├─────────────────┤
 │ Rate Monitor    │ ← Business Logic
@@ -33,17 +37,22 @@ This application follows a Service-Oriented Architecture (SOA) with the followin
 
 ### Layers
 
-1. **WebSocket API Layer**
+1. **Authentication Layer**
+   - Verifies client access key
+   - Manages client authentication state
+   - Controls access to WebSocket server
+
+2. **WebSocket API Layer**
    - Handles client connections
    - Manages real-time communication
    - Broadcasts updates to connected clients
 
-2. **Service Layer**
+3. **Service Layer**
    - Rate Monitor Service: Monitors and detects rate changes
    - Exchange Rates Service: Fetches and processes rate data
    - Implements core business logic
 
-3. **External API Layer**
+4. **External API Layer**
    - Connects to exchangeratesapi.io
    - Provides fallback to mock data
    - Handles API communication
@@ -57,6 +66,7 @@ backend/
 │   ├── types/
 │   │   └── index.ts           # TypeScript type definitions
 │   ├── services/
+│   │   ├── auth.ts            # Client authentication service
 │   │   ├── exchangeRates.ts   # Exchange rate fetching service
 │   │   ├── rateMonitor.ts     # Rate monitoring and comparison
 │   │   └── webSocket.ts       # WebSocket server and client handling
@@ -69,6 +79,7 @@ backend/
 
 ### Key Components
 
+- `auth.ts`: Handles client authentication and access control
 - `exchangeRates.ts`: Handles fetching rates from the API or generating mock data
 - `rateMonitor.ts`: Monitors rate changes and triggers notifications
 - `webSocket.ts`: Manages WebSocket connections and broadcasts updates
@@ -96,6 +107,9 @@ LOG_LEVEL=info                      # Logging level (debug, info, warn, error)
 PAPERTRAIL_HOST=logs.papertrailapp.com  # Papertrail host (optional)
 PAPERTRAIL_PORT=12345               # Papertrail port (optional)
 PAPERTRAIL_HOSTNAME=currency-monitor-backend  # Identifier in logs (optional)
+
+# Authentication
+CLIENT_ACCESS_KEY=your-secure-api-key-here # Static key for all clients. generate any random string that is 16 characters long.
 ```
 
 ### Environment Variables Details
@@ -148,6 +162,12 @@ PAPERTRAIL_HOSTNAME=currency-monitor-backend  # Identifier in logs (optional)
 - `PAPERTRAIL_HOSTNAME`: Identifier for this service in logs
   - Default: 'currency-monitor-backend'
   - Required: No
+
+#### Authentication
+- `CLIENT_ACCESS_KEY`: Client Access Key for WebSocket authentication
+  - Required: Yes
+  - Example: a3f1b2c4d5e6f7g8h9i0j1k2l3m4n5o6
+  - Description: Static key used by clients to access the currency monitor. Generate any random string that is 16 characters long. and will be used for all clients.
 
 ## Development Mode
 
@@ -247,7 +267,9 @@ The service emits the following events:
 ## WebSocket Client Example
 
 ```typescript
-const ws: WebSocket = new WebSocket('ws://localhost:PORT');
+// Connect with your API key
+const clientKey = 'your-client-access-key-here';
+const ws: WebSocket = new WebSocket(`ws://localhost:PORT?apiKey=${clientKey}`);
 
 ws.onmessage = (event: MessageEvent) => {
     const data: WebSocketMessage = JSON.parse(event.data);
@@ -255,7 +277,30 @@ ws.onmessage = (event: MessageEvent) => {
 };
 ```
 
-### Logger Configuration
+## Authentication
+
+The service uses a Client Access Key for authentication. This is a simple API key-based 
+authentication system where clients must provide the key to connect to the WebSocket server.
+
+### Client Access Key
+Currently, this is implemented as a static key that clients must include when connecting
+to the WebSocket server. While this is suitable for development and testing, in a 
+production environment you might want to implement a more robust authentication system.
+
+#### How to Connect
+1. Use the provided Client Access Key in your WebSocket connection
+2. Include the key as a query parameter named 'apiKey'
+
+```typescript
+// Example connection with Client Access Key
+const ws = new WebSocket(`ws://localhost:3000?apiKey=your-access-key-here`);
+```
+
+> **Note**: For development purposes, the Client Access Key is statically defined in the
+.env file. In a production environment, you should implement proper key management
+and rotation.
+
+## Logger Configuration
 
 The application uses Winston for logging with optional Papertrail integration.
 

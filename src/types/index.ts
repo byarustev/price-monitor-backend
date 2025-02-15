@@ -1,3 +1,5 @@
+import { WebSocket } from 'ws';
+
 export interface ExchangeRates {
     [currency: string]: number;
 }
@@ -13,4 +15,14 @@ export interface RateChange {
 export interface WebSocketMessage {
     type: 'rates' | 'rateChange';
     data: ExchangeRates | RateChange;
+}
+
+export interface User {
+    id: string;
+    email: string;
+}
+
+export interface WebSocketClient extends WebSocket {
+    user?: User;
+    isAuthenticated?: boolean;
 } 
