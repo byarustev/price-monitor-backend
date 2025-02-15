@@ -1,5 +1,5 @@
-const winston = require('winston');
-const { Papertrail } = require('winston-papertrail');
+import winston from 'winston';
+import { Papertrail } from 'winston-papertrail';
 
 const { createLogger, format, transports } = winston;
 const { combine, timestamp, printf, colorize } = format;
@@ -14,7 +14,7 @@ const logFormat = printf(({ level, message, timestamp, ...metadata }) => {
 });
 
 // Create Papertrail transport if credentials are provided
-const getPapertrailTransport = () => {
+const getPapertrailTransport = (): Papertrail | null => {
     if (process.env.PAPERTRAIL_HOST && process.env.PAPERTRAIL_PORT) {
         return new Papertrail({
             host: process.env.PAPERTRAIL_HOST,
@@ -28,9 +28,8 @@ const getPapertrailTransport = () => {
 };
 
 // Configure transports
-const configureTransports = () => {
-    const transportsList = [
-        // Console transport for development
+const configureTransports = (): winston.transport[] => {
+    const transportsList: winston.transport[] = [
         new transports.Console({
             level: process.env.LOG_LEVEL || 'info',
             format: combine(
@@ -41,16 +40,14 @@ const configureTransports = () => {
         })
     ];
 
-    // Add Papertrail transport if configured
     const papertrailTransport = getPapertrailTransport();
     if (papertrailTransport) {
-        transportsList.push(papertrailTransport);
+        transportsList.push(papertrailTransport as unknown as winston.transport);
     }
 
     return transportsList;
 };
 
-// Create the logger
 const logger = createLogger({
     level: process.env.LOG_LEVEL || 'info',
     format: combine(
@@ -61,4 +58,4 @@ const logger = createLogger({
     exitOnError: false
 });
 
-module.exports = logger; 
+export default logger; 

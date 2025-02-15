@@ -1,10 +1,10 @@
-require('dotenv').config();
-const express = require('express');
-const http = require('http');
-const WebSocket = require('ws');
-const { fetchExchangeRates } = require('./services/exchangeRates');
-const { RateMonitor } = require('./services/rateMonitor');
-const logger = require('./utils/logger');
+import 'dotenv/config';
+import express from 'express';
+import http from 'http';
+import WebSocket from 'ws';
+import { RateMonitor } from './services/rateMonitor';
+import { WebSocketMessage } from './types';
+import logger from './utils/logger';
 
 const app = express();
 const server = http.createServer(app);
@@ -14,14 +14,15 @@ const port = process.env.PORT || 3000;
 const monitor = new RateMonitor();
 
 // WebSocket connection handling
-wss.on('connection', (ws) => {
+wss.on('connection', (ws: WebSocket) => {
     logger.info('New client connected');
 
     // Send current rates to new client
-    ws.send(JSON.stringify({
+    const message: WebSocketMessage = {
         type: 'rates',
         data: monitor.getCurrentRates()
-    }));
+    };
+    ws.send(JSON.stringify(message));
 
     ws.on('close', () => {
         logger.info('Client disconnected');
@@ -29,7 +30,7 @@ wss.on('connection', (ws) => {
 });
 
 // Broadcast to all connected clients
-function broadcast(data) {
+function broadcast(data: WebSocketMessage): void {
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify(data));
