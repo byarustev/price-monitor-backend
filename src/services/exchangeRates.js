@@ -7,6 +7,7 @@ async function fetchExchangeRates(base = 'EUR') {
     try {
         const response = await axios.get(`${BASE_URL}/latest`, {
             params: {
+                git 
                 access_key: API_KEY,
                 base: base
             }
