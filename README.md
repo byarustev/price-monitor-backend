@@ -135,4 +135,36 @@ ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
     console.log('Received:', data);
 };
+```
+
+### Logger Configuration
+
+The application uses Winston for logging with optional Papertrail integration.
+
+#### Environment Variables for Logging
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| LOG_LEVEL | Logging level (debug, info, warn, error) | info | No |
+| PAPERTRAIL_HOST | Papertrail host | - | No |
+| PAPERTRAIL_PORT | Papertrail port | - | No |
+| PAPERTRAIL_HOSTNAME | Host identifier in logs | currency-monitor | No |
+
+#### Log Levels
+
+- `error`: For errors that need immediate attention
+- `warn`: For warning conditions
+- `info`: For general operational information
+- `debug`: For detailed debugging information
+
+#### Example Usage
+
+```javascript
+const logger = require('./utils/logger');
+
+// Different log levels
+logger.info('Server started on port 3000');
+logger.warn('Rate limit approaching threshold');
+logger.error('Failed to fetch exchange rates', { error: err.message });
+logger.debug('Processing rate update', { rates: newRates });
 ``` 

@@ -1,5 +1,6 @@
 const EventEmitter = require('events');
 const { fetchExchangeRates } = require('./exchangeRates');
+const logger = require('../utils/logger');
 
 class RateMonitor extends EventEmitter {
     constructor() {
@@ -18,6 +19,7 @@ class RateMonitor extends EventEmitter {
     async updateRates() {
         try {
             const newRates = await fetchExchangeRates();
+            logger.debug('Fetched new rates', { rates: newRates });
 
             // Compare with previous rates and log changes
             if (this.previousRates) {
@@ -28,8 +30,7 @@ class RateMonitor extends EventEmitter {
 
                         // Only log if change exceeds threshold
                         if (changePercent > this.threshold) {
-                            console.log({
-                                event: 'PRICE_CHANGE',
+                            logger.info('Rate change detected', {
                                 currency,
                                 oldPrice: oldRate,
                                 newPrice: newRate,
@@ -63,7 +64,7 @@ class RateMonitor extends EventEmitter {
 
             this.currentRates = newRates;
         } catch (error) {
-            console.error('Error checking rates:', error);
+            logger.error('Error checking rates:', { error: error.message });
         }
     }
 

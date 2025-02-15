@@ -4,6 +4,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const { fetchExchangeRates } = require('./services/exchangeRates');
 const { RateMonitor } = require('./services/rateMonitor');
+const logger = require('./utils/logger');
 
 const app = express();
 const server = http.createServer(app);
@@ -14,7 +15,7 @@ const monitor = new RateMonitor();
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {
-    console.log('New client connected');
+    logger.info('New client connected');
 
     // Send current rates to new client
     ws.send(JSON.stringify({
@@ -23,7 +24,7 @@ wss.on('connection', (ws) => {
     }));
 
     ws.on('close', () => {
-        console.log('Client disconnected');
+        logger.info('Client disconnected');
     });
 });
 
@@ -46,6 +47,6 @@ monitor.on('rateChange', (change) => {
 
 // Start the server
 server.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    logger.info(`Server is running on port ${port}`);
     monitor.startMonitoring();
 }); 
