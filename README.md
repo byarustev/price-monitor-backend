@@ -10,6 +10,153 @@ A Node.js service that monitors currency exchange rates and broadcasts changes t
 - Configurable update interval
 - Docker support for easy deployment
 
+## Architecture
+
+This application follows a Service-Oriented Architecture (SOA) with the following layers:
+
+```
+┌─────────────────┐
+│  WebSocket API  │ ← Client Connections
+└────────┬────────┘
+         │
+┌────────┴────────┐
+│ Service Layer   │
+├─────────────────┤
+│ Rate Monitor    │ ← Business Logic
+│ Exchange Rates  │
+└────────┬────────┘
+         │
+┌────────┴────────┐
+│  External API   │ ← Data Source
+└─────────────────┘
+```
+
+### Layers
+
+1. **WebSocket API Layer**
+   - Handles client connections
+   - Manages real-time communication
+   - Broadcasts updates to connected clients
+
+2. **Service Layer**
+   - Rate Monitor Service: Monitors and detects rate changes
+   - Exchange Rates Service: Fetches and processes rate data
+   - Implements core business logic
+
+3. **External API Layer**
+   - Connects to exchangeratesapi.io
+   - Provides fallback to mock data
+   - Handles API communication
+
+## Application Structure
+
+```
+backend/
+├── src/
+│   ├── index.ts                # Application entry point
+│   ├── types/
+│   │   └── index.ts           # TypeScript type definitions
+│   ├── services/
+│   │   ├── exchangeRates.ts   # Exchange rate fetching service
+│   │   ├── rateMonitor.ts     # Rate monitoring and comparison
+│   │   └── webSocket.ts       # WebSocket server and client handling
+│   └── utils/
+│       └── logger.ts          # Logging utility
+├── .env                       # Environment variables
+├── package.json              
+└── tsconfig.json             # TypeScript configuration
+```
+
+### Key Components
+
+- `exchangeRates.ts`: Handles fetching rates from the API or generating mock data
+- `rateMonitor.ts`: Monitors rate changes and triggers notifications
+- `webSocket.ts`: Manages WebSocket connections and broadcasts updates
+- `logger.ts`: Provides structured logging with Papertrail support
+
+## Environment Variables
+
+Create a `.env` file in the backend directory with the following variables:
+
+```env
+# Server Configuration
+PORT=3000                           # Port for the WebSocket server
+
+# Exchange Rate API Configuration
+EXCHANGE_RATE_API_KEY=your_api_key  # API key from exchangeratesapi.io
+BASE_URL=http://api.exchangeratesapi.io/v1  # Base URL for the exchange rate API
+USE_DEMO_DATA=false                 # Set to 'true' to use mock data instead of real API
+
+# Rate Monitor Configuration
+UPDATE_INTERVAL=20000               # Interval to check for rate updates (in milliseconds)
+RATE_CHANGE_THRESHOLD=0.001         # Minimum change required to trigger an update (0.1%)
+
+# Logger Configuration
+LOG_LEVEL=info                      # Logging level (debug, info, warn, error)
+PAPERTRAIL_HOST=logs.papertrailapp.com  # Papertrail host (optional)
+PAPERTRAIL_PORT=12345               # Papertrail port (optional)
+PAPERTRAIL_HOSTNAME=currency-monitor-backend  # Identifier in logs (optional)
+```
+
+### Environment Variables Details
+
+#### Server Configuration
+- `PORT`: The port number for the WebSocket server
+  - Default: 3000
+  - Required: No
+
+#### Exchange Rate API Configuration
+- `EXCHANGE_RATE_API_KEY`: Your API key from exchangeratesapi.io
+  - Required: Yes (unless USE_DEMO_DATA is true)
+  - Get your key at: https://exchangeratesapi.io/
+
+- `BASE_URL`: The base URL for the exchange rate API
+  - Default: http://api.exchangeratesapi.io/v1
+  - Required: No
+
+- `USE_DEMO_DATA`: Toggle between real API and mock data
+  - Values: 'true' or 'false'
+  - Default: 'false'
+  - Required: No
+
+#### Rate Monitor Configuration
+- `UPDATE_INTERVAL`: How often to check for rate updates
+  - Value in milliseconds
+  - Default: 60000 (1 minute)
+  - Required: No
+
+- `RATE_CHANGE_THRESHOLD`: Minimum change required to trigger an update
+  - Value as decimal (0.001 = 0.1%)
+  - Default: 0.001
+  - Required: No
+
+#### Logger Configuration
+- `LOG_LEVEL`: The minimum level of logs to output
+  - Values: 'debug', 'info', 'warn', 'error'
+  - Default: 'info'
+  - Required: No
+
+- `PAPERTRAIL_HOST`: Papertrail logging service host
+  - Required: No
+  - Only needed if using Papertrail logging
+  - Sign up at: https://papertrailapp.com/
+
+- `PAPERTRAIL_PORT`: Papertrail logging service port
+  - Required: No
+  - Only needed if using Papertrail logging
+
+- `PAPERTRAIL_HOSTNAME`: Identifier for this service in logs
+  - Default: 'currency-monitor-backend'
+  - Required: No
+
+## Development Mode
+
+For development, you can use demo data by setting:
+```env
+USE_DEMO_DATA=true
+```
+This will generate mock exchange rates instead of calling the real API.
+
 ## Running with Docker
 
 ### Quick Start
@@ -53,37 +200,8 @@ docker-compose up -d
 npm install
 ```
 
-2. Create a `.env` file with the following variables:
-```env
-# Your API key from exchangeratesapi.io
-EXCHANGE_RATE_API_KEY=your_api_key_here
-
-# Server port for WebSocket and HTTP connections
-PORT=3000
-
-# How often to check for rate updates (in milliseconds)
-UPDATE_INTERVAL=60000
-
-# Minimum rate change to trigger an event (0.001 = 0.1%)
-RATE_CHANGE_THRESHOLD=0.001
-
-# API base URL
-BASE_URL=http://api.exchangeratesapi.io/v1
-```
-
-### Environment Variables Explained
-
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| EXCHANGE_RATE_API_KEY | Your API key from exchangeratesapi.io | - | Yes |
-| PORT | Server port number | 3000 | No |
-| UPDATE_INTERVAL | Time between rate checks (ms) | 60000 | No |
-| RATE_CHANGE_THRESHOLD | Minimum change to trigger event | 0.001 | No |
-| BASE_URL | Exchange rates API base URL | http://api.exchangeratesapi.io/v1 | No |
-
-- Get your API key from [exchangeratesapi.io](https://exchangeratesapi.io/)
-- `UPDATE_INTERVAL` is in milliseconds (default: 60000 = 1 minute)
-- `RATE_CHANGE_THRESHOLD` is the minimum rate change to trigger an event (default: 0.001 = 0.1%)
+2. Create a `.env` file with variables:
+as shown in the Environment Variables section.
 
 ## Running the Service
 
@@ -128,11 +246,11 @@ The service emits the following events:
 
 ## WebSocket Client Example
 
-```javascript
-const ws = new WebSocket('ws://localhost:PORT');
+```typescript
+const ws: WebSocket = new WebSocket('ws://localhost:PORT');
 
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
+ws.onmessage = (event: MessageEvent) => {
+    const data: WebSocketMessage = JSON.parse(event.data);
     console.log('Received:', data);
 };
 ```
@@ -142,13 +260,7 @@ ws.onmessage = (event) => {
 The application uses Winston for logging with optional Papertrail integration.
 
 #### Environment Variables for Logging
-
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| LOG_LEVEL | Logging level (debug, info, warn, error) | info | No |
-| PAPERTRAIL_HOST | Papertrail host | - | No |
-| PAPERTRAIL_PORT | Papertrail port | - | No |
-| PAPERTRAIL_HOSTNAME | Host identifier in logs | currency-monitor | No |
+As shown in the Environment Variables section.
 
 #### Log Levels
 
@@ -159,12 +271,12 @@ The application uses Winston for logging with optional Papertrail integration.
 
 #### Example Usage
 
-```javascript
-const logger = require('./utils/logger');
+```typescript
+import { logger } from './utils/logger';
 
 // Different log levels
 logger.info('Server started on port 3000');
 logger.warn('Rate limit approaching threshold');
-logger.error('Failed to fetch exchange rates', { error: err.message });
+logger.error('Failed to fetch exchange rates', { error: error instanceof Error ? error.message : 'Unknown error' });
 logger.debug('Processing rate update', { rates: newRates });
 ``` 

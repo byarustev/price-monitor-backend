@@ -3,6 +3,12 @@ import { ExchangeRates } from '../types';
 import logger from '../utils/logger';
 
 export async function fetchExchangeRates(base: string = 'EUR'): Promise<ExchangeRates> {
+    // Check if we should use demo data
+    if (process.env.USE_DEMO_DATA === 'true') {
+        logger.info('Using demo data for exchange rates');
+        return generateMockRates();
+    }
+
     try {
         const response = await axios.get(`${process.env.BASE_URL}/latest`, {
             params: {
